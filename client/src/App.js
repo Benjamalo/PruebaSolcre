@@ -1,27 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from "react";
+import "./App.css";
+import Gestion from "./components/gestion";
+import HomePage from "./components/HomePage";
 
 function App() {
-  const [backData, setBackData] = useState([{}]);
-  useEffect(() => {
-    fetch("/")
-      .then((response) => response.json())
-      .then((data) => {
-        setBackData(data);
-      });
-  }, []);
   return (
-    <div>
-      <div>
-        
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route exact path="/" element={<HomePage />}></Route>
+        <Route exact path="/gestion" element={<Gestion />}></Route>
+      </Routes>
+    </Router>
   );
 }
-
 export default App;
-
-// {typeof backData === "undefined" ? (
-//   <p>Loading...</p>
-// ) : (
-//   backData.forEach((e, i) => <p key={i}>{e}</p>)
-// )}

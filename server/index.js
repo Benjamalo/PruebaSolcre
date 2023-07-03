@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const morgan = require("morgan");
-
+const bodyParser = require('body-parser');
 
 const mysql = require("mysql");
 const myConnection = require('express-myconnection')
@@ -16,6 +16,8 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 //middlewares
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 app.use(myConnection(mysql, {
     host: "localhost",
