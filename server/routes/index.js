@@ -5,5 +5,7 @@ const indexController = require('../controllers/indexController')
 
 router.get('/api',indexController.listPerfil)
 router.post('/api/login', indexController.login);
+router.post('/registrarVoto', indexController.verificarVoto);
+router.get('/votos', indexController.obtenerNumeroVotos);
 
 module.exports=router
