@@ -1,28 +1,87 @@
 const mysql = require("mysql");
 const controller = {};
 const fecha = new Date();
-let idVoto = 0;
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "benjamin2422002",
   database: "dbsolcre",
 });
-//   const datosPrecargados = [
-//     [2,5159780-5,'benjamin','benjamalo02@gmail.com',2]
-//   ]
-//   const insertQuery = 'INSERT INTO usuario (idUsuario, Documento, Clave,Email,idPerfil) VALUES ?';
-//   connection.query(insertQuery, [datosPrecargados], (error, results) => {
-//     if (error) {
-//       console.error('Error al insertar los datos:', error);
+  const datosPrecargadosUsuario = [
+    [1,5159780-2,'benjamin','benjamalo02@gmail.com',2],
+  ]
+  const datosPrecargadosPerfil = [
+    [1,'benjamin','Malo','Ejido y canelones', 91602768,'2002/2/24','m' ],
+    [2,'Alfonso','Trezza','Canelones', 91602666,'2008/2/29','m' ],
+    [3,'Brunella','Chevalier','Mercedes', 91607833,'1998/4/13','f' ],
+    [4,'Eloisa','Teixeira','Ejido y canelones', 99122657,'1982/2/19','f' ],
+    [5,'Guillermo','Belando','24 de febrero', 97856274,'2002/2/27','m' ],
+    [6,'Isabel','Halty','Julio Herrara', 98742442,'2003/5/15','f' ],
+    [7,'Carlos','Malo','Soriano', 92847244,'2000/1/1','m' ],
+    [8,'Ricardo','Bueno','Caracas', 98998372,'1978/6/12','m' ],
+    [9,'Juan','Castro','18 de julio', 95537535,'2000/8/6','m' ],
+    [10,'Daisy','Dolores','Calle 18', 97442523,'1969/3/4','f' ],
+  ]
+  const datosPrecargadosEntidad = [
+    [1,'5159780-2',1,1],
+    [2,'3172739-8',0,2],
+    [3,'5891460-7',0,3],
+    [4,'6970216-2',0,4],
+    [5,'9496221-0',0,5],
+    [6,'4241814-8',0,6],
+    [7,'1751550-3',0,7],
+    [8,'4983214-5',0,8],
+    [9,'7508633-8',0,9],
+    [10,'4965361-8',1,10],
 
-//       return;
-//     }
+  ]
+  const insertQueryPerfil = 'INSERT INTO perfil (idPerfil,Nombre, Apellido,Dirección,Teléfono, Dob,Sexo) VALUES ?';
+  const insertQueryEntidad = 'INSERT INTO entidad (idEntidad,Documento, es_postulante,idPerfil) VALUES ?';
+  const insertQueryUser = 'INSERT INTO usuario (idUsuario,Documento, Clave,Email,idPerfil) VALUES ?';
 
-//     console.log('Datos precargados insertados correctamente');
-//     console.log('Número de filas insertadas:', results.affectedRows);
-
-// });
+  function insertarDatos() {
+    const insertPerfil = new Promise((resolve, reject) => {
+      connection.query(insertQueryPerfil, [datosPrecargadosPerfil], (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+    const insertEntidad = insertPerfil.then(() => {
+      return new Promise((resolve, reject) => {
+        connection.query(insertQueryEntidad, [datosPrecargadosEntidad], (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
+    });
+  
+    const insertUsuario = insertEntidad.then(() => {
+      return new Promise((resolve, reject) => {
+        connection.query(insertQueryUser, [datosPrecargadosUsuario], (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
+    });
+    insertUsuario
+      .then(() => {
+        console.log("Datos insertados correctamente.");
+      })
+      .catch((error) => {
+        console.error("Error al insertar los datos:", error);
+      });
+  }
+  insertarDatos();
+  
 controller.listPerfil = (req, res) => {
   req.getConnection((err, conn) => {
     conn.query(
@@ -164,13 +223,12 @@ controller.verificarVoto = (req, res) => {
 };
 controller.obtenerNumeroVotos = (req, res) => {
   const obtenerVotosQuery = `
-    SELECT v.idEntidadPostulante, COUNT(*) AS numVotos, p.Nombre AS NombreEntidad
-    FROM voto v
-    INNER JOIN entidad e ON v.idEntidadPostulante = e.idEntidad
-    INNER JOIN perfil p ON e.idPerfil = p.idPerfil
-    GROUP BY v.idEntidadPostulante, p.Nombre
-  `;
-
+  SELECT v.idEntidadPostulante, COUNT(*) AS numVotos, p.Nombre AS NombreEntidad, v.fecha
+  FROM voto v
+  INNER JOIN entidad e ON v.idEntidadPostulante = e.idEntidad
+  INNER JOIN perfil p ON e.idPerfil = p.idPerfil
+  GROUP BY v.idEntidadPostulante, p.Nombre, v.fecha
+`;
   connection.query(obtenerVotosQuery, (error, results) => {
     if (error) {
       console.error("Error al obtener el número de votos:", error);
@@ -179,5 +237,27 @@ controller.obtenerNumeroVotos = (req, res) => {
     res.status(200).json(results);
   });
 };
+
+controller.obtenerDetalleVoto = (req, res) => {
+  const idEntidadPostulante = req.params.idEntidadPostulante;
+  const obtenerDetalleVotoQuery = `
+    SELECT v.*, ev.Nombre, ev.Apellido, ev.Dirección, ev.Teléfono, ev.Dob, p.Nombre AS NombrePostulante
+    FROM voto v
+    INNER JOIN entidad e ON v.idEntidadVotante = e.idEntidad
+    INNER JOIN perfil ev ON e.idPerfil = ev.idPerfil
+    INNER JOIN perfil p ON v.idEntidadPostulante = p.idPerfil
+    WHERE v.idEntidadPostulante = ?
+  `;
+  connection.query(obtenerDetalleVotoQuery, [idEntidadPostulante], (error, results) => {
+    if (error) {
+      console.error("Error al obtener el detalle del voto:", error);
+      return res.status(500).json({ error: "Error en el servidor" });
+    }
+    res.status(200).json(results);
+  });
+};
+
+
+
 
 module.exports = controller;
